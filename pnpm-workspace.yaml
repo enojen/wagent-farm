@@ -20,5 +20,7 @@ catalog:
   drizzle-kit: 0.31.10
   pg: 8.21.0
   '@types/pg': 8.20.0
+  # ≤0.4.x only: 0.5.x dropped the `/vector` subpath (pgvector moved to a separate add-on).
+  '@electric-sql/pglite': 0.4.6
   hono: 4.12.25
   '@mastra/core': 1.42.0

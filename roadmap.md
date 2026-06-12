@@ -21,7 +21,7 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 
 - [x] **T1.1 Schema v1 (Drizzle migrations).** Tables: `tenants`, `plans`, `agents` (tenant_id + key — a tenant has many agents), `agent_configs` (jsonb config, versioned per agent), `conversations` (tenant_id + channel + end_user_id — the thread spans agents), `sessions` (conversation_id, agent_id, status, closed_reason: …|handoff), `messages` (envelope-shaped, role, content, session_id), `usage_events` (tenant_id, session_id, kind: llm|tool|message, tokens_in/out, cost_estimate, ts), `documents` + `chunks` (pgvector column, tenant namespace), `profile_facts` (tenant_id, end_user_id, key, value).
   *Done when:* `pnpm db:migrate` runs clean on a fresh DB.
-- [ ] **T1.2 Tenant-scoped repository layer.** Every query helper takes `tenantId` as its first argument; no raw cross-tenant query helpers exist. Unit tests prove tenant A cannot read tenant B's rows through the public API of this package.
+- [x] **T1.2 Tenant-scoped repository layer.** Every query helper takes `tenantId` as its first argument; no raw cross-tenant query helpers exist. Unit tests prove tenant A cannot read tenant B's rows through the public API of this package.
 - [ ] **T1.3 Seed script.** Two tenants, each with one or more agents whose `agent_configs` match the YAML shape in the notes doc (`otosor-demo`: a sales agent with search_vehicles/listing_detail/create_appointment, scope lists, session rules — optionally a second after-sales agent to exercise routing/handoff; `shopify-demo`: query_order/search_product). Seed ~20 fake vehicle listings and ~10 fake orders as tool data tables.
   *Done when:* `pnpm db:seed` is idempotent and prints both tenant ids.
 
