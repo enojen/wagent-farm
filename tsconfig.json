@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/channels" },
+    { "path": "packages/db" },
+    { "path": "packages/agents" },
+    { "path": "packages/tools" },
+    { "path": "apps/api" }
+  ]
+}

@@ -1,0 +1,26 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Single source of truth for dependency versions across the monorepo.
+# Reference an entry from a package with `"<dep>": "catalog:"`.
+# Versions verified against the npm registry on 2026-06-12.
+catalog:
+  # Toolchain (used now, Phase 0)
+  typescript: 6.0.3
+  '@types/node': 25.9.3
+  eslint: 10.4.1
+  '@eslint/js': 10.0.1
+  typescript-eslint: 8.61.0
+  globals: 17.6.0
+  vitest: 4.1.8
+  prettier: 3.8.4
+  tsx: 4.22.4
+
+  # Declared here ahead of the phases that introduce them, so versions
+  # stay centralized. Not installed until a package references them.
+  zod: 4.4.3
+  drizzle-orm: 0.45.2
+  drizzle-kit: 0.31.10
+  hono: 4.12.25
+  '@mastra/core': 1.42.0
