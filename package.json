@@ -11,7 +11,8 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:ping": "docker compose exec -T db pg_isready -U wagent -d wagent_farm"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

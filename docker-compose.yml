@@ -1,0 +1,24 @@
+# Local infra for development. Single Postgres 16 + pgvector instance — the one
+# store for tenants, conversations, sessions, usage_events, and vector chunks
+# (project-notes.md). Compose v2+ ignores the legacy top-level `version:` key,
+# so it is intentionally omitted.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: wagent-db
+    environment:
+      POSTGRES_USER: wagent
+      POSTGRES_PASSWORD: wagent
+      POSTGRES_DB: wagent_farm
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U wagent -d wagent_farm']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
