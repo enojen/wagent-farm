@@ -69,6 +69,9 @@ ones, restated because breaking them causes real bugs:
 
 ## Git workflow
 
+- **Never commit or push before the user has reviewed.** Make the edits, summarize what
+  changed, then stop and wait for an explicit OK. Only after approval: `git commit` / push /
+  open the PR. (The user reviews the working-tree diff, not git history.)
 - Trunk-based: `main` is always green/deployable. Branch per roadmap task off `main`, open a
   PR, **squash-merge** once CI and the §12 checklist pass. Keep branches short-lived.
 - Branch names: `<type>/<TaskId>-<kebab-summary>` — e.g. `feat/T1.2-tenant-repo`,
@@ -87,3 +90,6 @@ ones, restated because breaking them causes real bugs:
 Every task = one small PR. §12 is the review gate. If a task balloons, split it rather than
 batching. Align on architecture and spec the tool list before writing agent code; put a
 human-in-the-loop checkpoint on anything irreversible.
+
+**Comments:** only when genuinely needed — explain *why*, not *what*; prefer self-explanatory
+code over narration. Keep them short, concise, and in English.
