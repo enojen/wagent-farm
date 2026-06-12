@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+.turbo/
+
+# Test / coverage
+coverage/
+.vitest/
+*.lcov
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Mastra local output (Studio, traces, build artifacts)
+.mastra/
+
+# Drizzle scratch (keep committed migrations; ignore local meta journals if generated outside repo)
+drizzle/.drizzle/
+
+# Logs & runtime
+*.log
+logs/
+pids/
+*.pid
+
+# Docker local volumes
+.docker/
+docker-data/
+pgdata/
+
+# Personal, untracked Claude notes (per Anthropic guidance)
+CLAUDE.local.md
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
