@@ -1,0 +1,21 @@
+# The legacy top-level `version:` key is intentionally omitted (Compose v2+ ignores it).
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: wagent-db
+    environment:
+      POSTGRES_USER: wagent
+      POSTGRES_PASSWORD: wagent
+      POSTGRES_DB: wagent_farm
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U wagent -d wagent_farm']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

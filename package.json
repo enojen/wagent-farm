@@ -8,10 +8,20 @@
   },
   "scripts": {
     "build": "pnpm -r build",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "db:ping": "docker compose exec -T db pg_isready -U wagent -d wagent_farm"
   },
   "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "globals": "catalog:",
+    "prettier": "catalog:",
     "typescript": "catalog:",
-    "@types/node": "catalog:"
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
   }
 }
