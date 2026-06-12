@@ -69,6 +69,9 @@ ones, restated because breaking them causes real bugs:
 
 ## Git workflow
 
+- **Never commit or push before the user has reviewed.** Make the edits, summarize what
+  changed, then stop and wait for an explicit OK. Only after approval: `git commit` / push /
+  open the PR. (The user reviews the working-tree diff, not git history.)
 - Trunk-based: `main` is always green/deployable. Branch per roadmap task off `main`, open a
   PR, **squash-merge** once CI and the §12 checklist pass. Keep branches short-lived.
 - Branch names: `<type>/<TaskId>-<kebab-summary>` — e.g. `feat/T1.2-tenant-repo`,
