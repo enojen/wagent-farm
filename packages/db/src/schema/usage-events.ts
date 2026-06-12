@@ -1,6 +1,6 @@
 import { integer, numeric, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { usageKind } from './enums.js';
-import { sessions } from './conversations.js';
+import { sessions } from './sessions.js';
 import { tenants } from './tenants.js';
 
 // Metered from the first turn, never retroactively (project-notes §3). One row per event.

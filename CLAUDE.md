@@ -36,6 +36,22 @@ packages/agents/     Mastra agents + config→agent factory (mastra allowed)
 packages/tools/      per-tenant tools, central registry (mastra allowed)
 ```
 
+## Directory & file naming
+
+- **Container directories** (hold many files of one *kind*) are **plural**: `repositories/`,
+  `channels/`, `tools/`. Exception: `schema/` stays singular — it's the Drizzle idiom and the
+  literal `drizzle.config.ts` `schema` key.
+- **Per-table units** mirror the **Postgres table name** (plural, snake_case → kebab-case):
+  table `usage_events` → `repositories/usage-events/` and `schema/usage-events.ts`. One token
+  greps cleanly from migration → schema → repo. The schema file name === the repo dir name.
+- **One table per file**: never two `pgTable`s in one schema file. Schema is flat (one
+  `.ts` per table); a repository is a directory because a table owns several files.
+- **Repository files**: `<table>.ts` (queries), `<table>.types.ts` (explicit `Input`
+  interfaces — no `Pick`/`Omit`/inline objects), `<table>.test.ts`, optional `<table>.guard.ts`
+  (tenant-ownership asserts). No generic base repo — one repo per table (SRP).
+- Shared, non-table schema (enums, embedding-dim const) lives in its own file (`enums.ts`,
+  with the dim const colocated in the table that uses it).
+
 ## Commands
 
 Each is available only after the roadmap task that introduces it — do not assume they exist
@@ -91,5 +107,10 @@ Every task = one small PR. §12 is the review gate. If a task balloons, split it
 batching. Align on architecture and spec the tool list before writing agent code; put a
 human-in-the-loop checkpoint on anything irreversible.
 
-**Comments:** only when genuinely needed — explain *why*, not *what*; prefer self-explanatory
-code over narration. Keep them short, concise, and in English.
+**Comments:** a comment must say only what the code *cannot*. Keep just three kinds:
+(1) a constraint the code can't express — version pins, return contracts ("undefined =
+not yours / already closed"); (2) a non-obvious *why* behind a decision — workaround,
+trade-off, chosen trick; (3) a documented exception to a project rule. Never narrate what
+the next line does, never reference roadmap task IDs or the review process, never write
+your reasoning to the reviewer — that belongs in the PR description. One short English
+line; if a comment explains *what*, rename/refactor instead.
