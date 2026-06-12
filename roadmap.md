@@ -19,10 +19,10 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 
 ## Phase 1 — Data layer (`packages/db`)
 
-- [ ] **T1.1 Schema v1 (Drizzle migrations).** Tables: `tenants`, `tenant_configs` (jsonb config, versioned), `plans`, `conversations` (tenant_id + channel + end_user_id), `sessions` (conversation_id, status, closed_reason), `messages` (envelope-shaped, role, content, session_id), `usage_events` (tenant_id, session_id, kind: llm|tool|message, tokens_in/out, cost_estimate, ts), `documents` + `chunks` (pgvector column, tenant namespace), `profile_facts` (tenant_id, end_user_id, key, value).
+- [ ] **T1.1 Schema v1 (Drizzle migrations).** Tables: `tenants`, `plans`, `agents` (tenant_id + key — a tenant has many agents), `agent_configs` (jsonb config, versioned per agent), `conversations` (tenant_id + channel + end_user_id — the thread spans agents), `sessions` (conversation_id, agent_id, status, closed_reason: …|handoff), `messages` (envelope-shaped, role, content, session_id), `usage_events` (tenant_id, session_id, kind: llm|tool|message, tokens_in/out, cost_estimate, ts), `documents` + `chunks` (pgvector column, tenant namespace), `profile_facts` (tenant_id, end_user_id, key, value).
   *Done when:* `pnpm db:migrate` runs clean on a fresh DB.
 - [ ] **T1.2 Tenant-scoped repository layer.** Every query helper takes `tenantId` as its first argument; no raw cross-tenant query helpers exist. Unit tests prove tenant A cannot read tenant B's rows through the public API of this package.
-- [ ] **T1.3 Seed script.** Two tenants with full configs matching the YAML shape in the notes doc (`otosor-demo`: search_vehicles/listing_detail/create_appointment tools, scope lists, session rules; `shopify-demo`: query_order/search_product). Seed ~20 fake vehicle listings and ~10 fake orders as tool data tables.
+- [ ] **T1.3 Seed script.** Two tenants, each with one or more agents whose `agent_configs` match the YAML shape in the notes doc (`otosor-demo`: a sales agent with search_vehicles/listing_detail/create_appointment, scope lists, session rules — optionally a second after-sales agent to exercise routing/handoff; `shopify-demo`: query_order/search_product). Seed ~20 fake vehicle listings and ~10 fake orders as tool data tables.
   *Done when:* `pnpm db:seed` is idempotent and prints both tenant ids.
 
 ## Phase 2 — Core (`packages/core`) — no Mastra here, ever
@@ -30,6 +30,7 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 - [ ] **T2.1 Envelope types.** `InboundEnvelope`, `OutboundEnvelope`, `ChannelCapabilities` (supportsStreaming, supportsRichReplies, freeReplyWindowOpen?). Pure types + zod schemas.
 - [ ] **T2.2 Session manager.** `resolveSession(tenantId, conversationKey)`: reuse open session within `session.timeout_hours`, else close-and-create (closed_reason: timeout|resolved|topic_change|manual). Per-conversation async lock (in-process for now) so turns serialize. Config-driven values only.
   *Done when:* unit tests cover reuse-within-timeout, new-after-timeout, serialized concurrent turns.
+  *Schema add (with this task):* `sessions.last_activity_at`, `sessions.closed_at`; index `sessions(tenant_id, status)` for the open-session lookup — measure before adding.
 - [ ] **T2.3 Turn pipeline (orchestrator).** `handleTurn(envelope)` skeleton: debounce buffer (config `debounce_seconds`, in-memory) → resolveSession → classify (interface only; stub returns `in_scope`) → route: answer | off_topic_template | handoff_stub → persist messages → return OutboundEnvelope. Classifier and agent are injected interfaces so core stays Mastra-free.
   *Done when:* pipeline test runs end-to-end with stub classifier + echo agent.
 
@@ -43,14 +44,17 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 ## Phase 4 — Agent runtime (`packages/agents` + `packages/tools`) — Mastra enters
 
 - [ ] **T4.1 Tool registry + first tools.** Central registry; tools enabled per tenant from config; zod schemas; semantic names; descriptions say *what + when*. Implement against seeded tables: `search_vehicles`, `listing_detail` (otosor), `query_order`, `search_product` (shopify). Credential injection stubbed but present in the signature.
-- [ ] **T4.2 Config→Agent factory.** Build a Mastra agent from `tenant_configs`: model string, system prompt assembled from prompt + procedures (cacheable static prefix), enabled tools. No tenant branching in code.
-- [ ] **T4.3 Intent/scope classifier.** Cheap model + structured output `{intent, in_scope, confidence, handoff}`; deterministic router in core consumes it (replaces the stub). Off-topic reply text and handoff triggers come from config.
+- [ ] **T4.2 Config→Agent factory.** Build a Mastra agent from `agent_configs`: model string, system prompt assembled from prompt + procedures (cacheable static prefix), enabled tools. No tenant/agent branching in code.
+  *Schema add:* a way to mark the active config version (e.g. `agents.active_config_version` or `agent_configs.is_active`) — defaults to max(version) until then.
+- [ ] **T4.3 Intent/scope classifier + agent router.** Cheap model + structured output `{intent, in_scope, confidence, handoff}`; deterministic router in core consumes it (replaces the stub). Routing also selects which of the tenant's agents owns the turn — match the classified intent against each agent's config `scope` (no central routing table, no branching on identity). A different agent than the open session's → close it (`closed_reason: handoff`) and open a new session for the chosen agent in the same conversation. Off-topic reply text and handoff triggers come from config.
 - [ ] **T4.4 Session turn as Mastra workflow.** Steps: load_context → classify → respond (single agent call) → persist. One model call per step; workflow state persisted to Postgres; a `human_takeover` flag on the session short-circuits the agent (prints "[handoff] human takes over" for now).
   *Done when:* REPL with `otosor-demo` answers "is there a diesel SUV under 20k?" via `search_vehicles`, deflects "get me a loan" with the config template, and a forced low-confidence case routes to handoff; all turns traced in DB.
+  *Schema add:* `sessions.human_takeover` (bool) for the muted-agent short-circuit; index `messages(session_id, created_at)` for ordered history load.
 
 ## Phase 5 — Gateway concerns: metering & limits
 
 - [ ] **T5.1 Usage metering.** Write `usage_events` per turn: LLM tokens (from model usage payload), tool invocations, message count. Daily per-tenant aggregate query helper.
+  *Schema add:* index `usage_events(tenant_id, ts)` for the daily aggregate; `usage_events.model` / `.metadata` if cost attribution needs them.
 - [ ] **T5.2 Plan enforcement.** Before LLM dispatch: hard limit check against plan (`monthly_tokens`), warn log at 80%, graceful "capacity full" reply at cap; simple per-tenant rate limit (token bucket on Postgres).
   *Done when:* a seeded tiny plan exhausts and the reply arrives without any LLM call (assert via usage_events).
 
@@ -59,6 +63,7 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 - [ ] **T6.1 Memory layering.** Context builder: current-session messages in full + one-line summaries of previous sessions (summary generated on session close) + `profile_facts` block. Token-limit pruning. Raw history untouched in DB.
 - [ ] **T6.2 Ingestion v1 + retrieval tool.** CLI: `pnpm ingest --tenant otosor-demo file.pdf` → parse → chunk → embed → upsert into `chunks` with tenant namespace. Tool `search_knowledge` queries with mandatory tenant filter; agent instructed to admit when context is insufficient.
   *Done when:* a seeded FAQ answers via `search_knowledge` for its tenant, and a cross-tenant retrieval attempt returns nothing (test).
+  *Schema add:* `chunks.metadata` (jsonb, for source permissions + hybrid filters), `documents.uri`/`.metadata`; HNSW index `chunks USING hnsw (embedding vector_cosine_ops)` + `chunks(tenant_id, namespace)` for the mandatory tenant filter (§12.2).
 
 ## Phase 7 — Observability & evals baseline
 
@@ -68,6 +73,7 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 ## Phase 8 — Panel v0 (optional, can slide)
 
 - [ ] **T8.1 Next.js read-only panel.** Tenant picker (no auth yet) → conversations inbox (sessions + messages) → usage chart from `usage_events`.
+  *Schema add:* index `conversations(tenant_id, created_at)` for the inbox list.
 
 ---
 
