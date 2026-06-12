@@ -8,10 +8,19 @@
   },
   "scripts": {
     "build": "pnpm -r build",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "format": "prettier --write ."
   },
   "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "globals": "catalog:",
+    "prettier": "catalog:",
     "typescript": "catalog:",
-    "@types/node": "catalog:"
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
   }
 }
