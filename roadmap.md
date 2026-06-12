@@ -10,16 +10,16 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 
 ## Phase 0 — Repo skeleton & guardrails
 
-- [ ] **T0.1 Init monorepo.** pnpm workspaces with `apps/api` (empty placeholder), `packages/core`, `packages/channels`, `packages/db`, `packages/agents`, `packages/tools`. Root `CLAUDE.md` pointing to the two docs above. TypeScript strict everywhere.
+- [x] **T0.1 Init monorepo.** pnpm workspaces with `apps/api` (empty placeholder), `packages/core`, `packages/channels`, `packages/db`, `packages/agents`, `packages/tools`. Root `CLAUDE.md` pointing to the two docs above. TypeScript strict everywhere.
   *Done when:* `pnpm -r build` passes on empty packages.
-- [ ] **T0.2 Boundary enforcement.** ESLint `no-restricted-imports`: importing `mastra`/`@mastra/*` fails outside `packages/agents` and `packages/tools`. Vitest wired at root.
+- [x] **T0.2 Boundary enforcement.** ESLint `no-restricted-imports`: importing `mastra`/`@mastra/*` fails outside `packages/agents` and `packages/tools`. Vitest wired at root.
   *Done when:* a deliberate bad import in `core` fails lint in CI.
-- [ ] **T0.3 Local infra.** `docker-compose.yml` with Postgres 16 + pgvector; `.env.example` (DB URL, `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`); README quickstart.
+- [x] **T0.3 Local infra.** `docker-compose.yml` with Postgres 16 + pgvector; `.env.example` (DB URL, `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`); README quickstart.
   *Done when:* `docker compose up -d && pnpm db:ping` succeeds.
 
 ## Phase 1 — Data layer (`packages/db`)
 
-- [ ] **T1.1 Schema v1 (Drizzle migrations).** Tables: `tenants`, `plans`, `agents` (tenant_id + key — a tenant has many agents), `agent_configs` (jsonb config, versioned per agent), `conversations` (tenant_id + channel + end_user_id — the thread spans agents), `sessions` (conversation_id, agent_id, status, closed_reason: …|handoff), `messages` (envelope-shaped, role, content, session_id), `usage_events` (tenant_id, session_id, kind: llm|tool|message, tokens_in/out, cost_estimate, ts), `documents` + `chunks` (pgvector column, tenant namespace), `profile_facts` (tenant_id, end_user_id, key, value).
+- [x] **T1.1 Schema v1 (Drizzle migrations).** Tables: `tenants`, `plans`, `agents` (tenant_id + key — a tenant has many agents), `agent_configs` (jsonb config, versioned per agent), `conversations` (tenant_id + channel + end_user_id — the thread spans agents), `sessions` (conversation_id, agent_id, status, closed_reason: …|handoff), `messages` (envelope-shaped, role, content, session_id), `usage_events` (tenant_id, session_id, kind: llm|tool|message, tokens_in/out, cost_estimate, ts), `documents` + `chunks` (pgvector column, tenant namespace), `profile_facts` (tenant_id, end_user_id, key, value).
   *Done when:* `pnpm db:migrate` runs clean on a fresh DB.
 - [ ] **T1.2 Tenant-scoped repository layer.** Every query helper takes `tenantId` as its first argument; no raw cross-tenant query helpers exist. Unit tests prove tenant A cannot read tenant B's rows through the public API of this package.
 - [ ] **T1.3 Seed script.** Two tenants, each with one or more agents whose `agent_configs` match the YAML shape in the notes doc (`otosor-demo`: a sales agent with search_vehicles/listing_detail/create_appointment, scope lists, session rules — optionally a second after-sales agent to exercise routing/handoff; `shopify-demo`: query_order/search_product). Seed ~20 fake vehicle listings and ~10 fake orders as tool data tables.
