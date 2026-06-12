@@ -90,3 +90,6 @@ ones, restated because breaking them causes real bugs:
 Every task = one small PR. §12 is the review gate. If a task balloons, split it rather than
 batching. Align on architecture and spec the tool list before writing agent code; put a
 human-in-the-loop checkpoint on anything irreversible.
+
+**Comments:** only when genuinely needed — explain *why*, not *what*; prefer self-explanatory
+code over narration. Keep them short, concise, and in English.
