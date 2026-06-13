@@ -20,6 +20,8 @@ export const sessions = pgTable('sessions', {
   status: sessionStatus('status').notNull().default('open'),
   closedReason: closedReason('closed_reason'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  lastActivityAt: timestamp('last_activity_at', { withTimezone: true }).defaultNow().notNull(),
+  closedAt: timestamp('closed_at', { withTimezone: true }),
 });
 
 export type Session = typeof sessions.$inferSelect;

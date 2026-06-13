@@ -28,16 +28,49 @@ pnpm lint                    # ESLint (enforces the mastra import boundary, §12
 pnpm test                    # Vitest
 ```
 
-## Monorepo layout
+## Architecture (ports & adapters)
+
+The whole monorepo is one **hexagon**: `core` is the center (pure business logic + the
+interfaces — *ports* — it needs), every other package is an *adapter* around it, and `apps/api`
+is the *composition root* that wires them together. Postgres (`db`) and Mastra (`agents`/`tools`)
+are swappable technologies that sit **behind ports** — `core` never names them.
 
 ```
-apps/api/            Hono API + webhooks (later phases)
-packages/core/       envelope, gateway, sessions, turn pipeline — NEVER imports mastra
-packages/channels/   channel ⇄ envelope adapters (console first, WhatsApp parked)
-packages/db/         Drizzle schema, migrations, tenant-scoped repositories
-packages/agents/     Mastra agents + config→agent factory (mastra allowed)
-packages/tools/      per-tenant tools, central registry (mastra allowed)
+   INBOUND / driving adapters            ⬡  CORE — the hexagon          OUTBOUND / driven adapters
+   (they call the core)                  (pure: zod only — no            (the core calls them,
+                                          mastra, no db, no HTTP)         each behind a core-owned port)
+
+  ┌─────────────────────────┐                                          ┌─────────────────────────┐
+  │ channels/               │                                          │ db/                     │
+  │  console · ScriptChannel│                                          │  Drizzle · migrations · │
+  │  whatsapp (parked)      │                                          │  tenant-scoped repos    │
+  └─────────────────────────┘          ┌────────────────────┐         └─────────────────────────┘
+              │                         │  domain/   types   │                      ▲
+              │  InboundEnvelope        │  ports/    ifaces  │   SessionStore       │
+              └───────────────────────▶ │  application/      │   ConversationStore  │
+                                        │     use-cases      │ ◀────────────────────┘
+  ┌─────────────────────────┐          │                    │                      ┌─────────────────────────┐
+  │ apps/api                │ ───call─▶ │  resolveSession,   │   AgentRunner        │ agents/ + tools/        │
+  │  HTTP · webhooks        │          │  turn pipeline,    │   Classifier         │  Mastra agents ·        │
+  │  + COMPOSITION ROOT     │ ◀─Outbound│  gateway           │ ───────────────────▶ │  tool registry →        │
+  │    (wires everything)   │  Envelope └────────────────────┘                      │  Shopify / Otosor APIs  │
+  └─────────────────────────┘                                                       └─────────────────────────┘
+
+   Dependency rule: every arrow points INWARD. `core` imports nothing of ours (zod only);
+   channels / db / agents / tools import `core`; `apps/api` imports all of them and wires them.
+   `core` ↔ `db` stay fully decoupled — the row→domain mapping lives in the composition root.
 ```
+
+| Package | Hexagon role | What it holds | Imports `core`? | Mastra? |
+| --- | --- | --- | --- | --- |
+| `packages/core` | ⬡ **center** (domain + ports + application) | envelope, session/conversation domain, gateway, turn pipeline; defines the ports it needs | — (depends on nothing of ours) | ❌ never |
+| `packages/db` | driven adapter (persistence) | Drizzle schema, migrations, tenant-scoped repositories | ❌ (kept decoupled) | ❌ |
+| `packages/agents` · `packages/tools` | driven adapter (LLM) | config→agent factory, tool registry → external APIs | ✅ (implements core ports) | ✅ **only here** |
+| `packages/channels` | driving adapter (input) | channel ⇄ envelope translation | ✅ (envelope + adapter iface) | ❌ |
+| `apps/api` | driving adapter **+ composition root** | HTTP/webhooks **and** the wiring that injects adapters into core | ✅ (imports everything) | wiring only |
+
+Structure is **role-shaped, not uniform**: `core` is laid out hexagonally inside
+(`domain/`, `ports/`, `application/`); `db` is laid out per table (`schema/`, `repositories/`).
 
 Dependency versions are centralized in the pnpm **catalog** (`pnpm-workspace.yaml`).
 
