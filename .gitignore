@@ -39,6 +39,7 @@ pgdata/
 
 # Personal, untracked Claude notes (per Anthropic guidance)
 CLAUDE.local.md
+.claude/
 
 # OS / editor cruft
 .DS_Store
