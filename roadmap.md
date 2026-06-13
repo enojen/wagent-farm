@@ -27,7 +27,7 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 
 ## Phase 2 — Core (`packages/core`) — no Mastra here, ever
 
-- [ ] **T2.1 Envelope types.** `InboundEnvelope`, `OutboundEnvelope`, `ChannelCapabilities` (supportsStreaming, supportsRichReplies, freeReplyWindowOpen?). Pure types + zod schemas.
+- [x] **T2.1 Envelope types.** `InboundEnvelope`, `OutboundEnvelope`, `ChannelCapabilities` (supportsStreaming, supportsRichReplies, freeReplyWindowOpen?). Pure types + zod schemas.
 - [ ] **T2.2 Session manager.** `resolveSession(tenantId, conversationKey)`: reuse open session within `session.timeout_hours`, else close-and-create (closed_reason: timeout|resolved|topic_change|manual). Per-conversation async lock (in-process for now) so turns serialize. Config-driven values only.
   *Done when:* unit tests cover reuse-within-timeout, new-after-timeout, serialized concurrent turns.
   *Schema add (with this task):* `sessions.last_activity_at`, `sessions.closed_at`; index `sessions(tenant_id, status)` for the open-session lookup — measure before adding.
