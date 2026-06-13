@@ -40,7 +40,7 @@ The two access modes are not mixed. Live, fast-changing data (Shopify stock/pric
 
 ## 7. Lessons from the industry
 
-Sierra, Decagon, and Intercom Fin independently arrived at the same abstraction: behavior is configuration, not code — "procedures" written in natural language (Decagon AOP, Fin Procedures, Sierra Journeys). The tenant config therefore holds not just a system prompt but a list of named procedures per scenario. The business-model axis: vendor-led setup (Sierra-style) brings big deals but limits the number of customers per person; self-service configuration (Fin-style) is the way for one team to serve hundreds of tenants — our target is the latter. The industry's core metric is resolution rate (the share of conversations resolved end-to-end without human intervention; not deflection) — measured per tenant from day one; sales are made over it.
+Sierra, Decagon, and Intercom Fin independently arrived at the same abstraction: behavior is configuration, not code — "procedures" written in natural language (Decagon AOP, Fin Procedures, Sierra Journeys). The tenant config therefore holds not just a system prompt but a list of named procedures per scenario. The voice layer is itself configuration, and the established pattern (clearest in Intercom Fin) is structured controls over free text: a fixed tone-of-voice preset, a separate answer-length setting, and a pronoun-formality control that mirrors the customer (the formal/informal distinction matters for Turkish sen/siz) — Anthropic's own prompting guidance independently mandates a role/persona, a positive output-style directive, and explicit uncertainty/anti-hallucination behavior in the system prompt. Multilingual support follows an "allowed-languages list + auto-detect and reply in kind" model, with the language detected once at the start of a conversation and held for its duration (which lines up with our session boundary, §5); Turkish and English are both first-class for these tenants. The business-model axis: vendor-led setup (Sierra-style) brings big deals but limits the number of customers per person; self-service configuration (Fin-style) is the way for one team to serve hundreds of tenants — our target is the latter. The industry's core metric is resolution rate (the share of conversations resolved end-to-end without human intervention; not deflection) — measured per tenant from day one; sales are made over it.
 
 ## 8. Example tenant config
 
@@ -48,6 +48,24 @@ Sierra, Decagon, and Intercom Fin independently arrived at the same abstraction:
 tenant_id: otosor
 model: anthropic:claude-sonnet-4-6
 agent_type: customer_support
+identity:
+  name: "Otosor Assistant"
+  role: "Vehicle-listings and appointment assistant"
+persona: "A helpful, patient car advisor who speaks plainly and guides without overwhelming the customer."
+tone: professional            # enum: friendly | neutral | matter_of_fact | professional | humorous
+output_style: "Short, smoothly flowing prose paragraphs; bullet points only when listing options."
+formality: auto               # enum: formal | informal | auto — drives TR sen/siz (and similar), mirrors the customer
+uncertainty_behavior: "If unsure, do not guess; say so plainly and hand off when it matters."
+rag_grounding:
+  directive: "Base answers only on the retrieved knowledge-base content."
+  no_evidence_fallback: "I don't have verified information on that; I can hand you to a representative."
+language:
+  default: tr
+  auto_detect: true           # detect once at conversation start, then reply in kind
+  allowed: [tr, en]
+messages:
+  greeting: "Hi! I'm the Otosor assistant — I can help with vehicle listings and appointments."
+  fallback: "I couldn't answer that just now; shall I hand you to a representative?"
 procedures:
   - name: test_drive_appointment
     text: "For anyone wanting a test drive: ask the city → show suitable listings → propose appointment slots."
@@ -72,7 +90,7 @@ plan:
   messages_per_minute: 60
 ```
 
-The Shopify customer is the same template filled with different values (tools: query_order, search_product, start_return; procedure: return flow, etc.). A new customer = a new config row, not new code.
+The Shopify customer is the same template filled with different values — different identity/persona/tone and `messages`, a different `language` default if its customers differ, different tools (query_order, search_product, start_return), a different procedure (return flow), etc. A new customer = a new config row, not new code. The identity/persona/tone/output_style/uncertainty/rag_grounding/language block above is the agent's voice layer; it compiles into the agent's system prompt (Mastra `instructions`), while `scope` and routing stay outside the prompt as deterministic code (§5, §10). `messages.greeting`/`fallback` are surfaced by deterministic code, not left to the LLM.
 
 ## 9. First-version scope and growth path
 
