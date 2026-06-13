@@ -36,7 +36,7 @@ Companion to `project-notes.md` (architecture) and `agent-building-principles.md
 
 ## Phase 3 — Console channel (`packages/channels`)
 
-- [ ] **T3.1 ChannelAdapter interface.** `start()`, `send(OutboundEnvelope)`, capability flags; adapters translate channel ⇄ envelope and nothing else.
+- [x] **T3.1 ChannelAdapter interface.** `start()`, `send(OutboundEnvelope)`, capability flags; adapters translate channel ⇄ envelope and nothing else.
 - [ ] **T3.2 ConsoleChannel (dev REPL).** `pnpm dev:chat --tenant otosor-demo --user phone:+90555...` opens a readline loop: stdin → InboundEnvelope → handleTurn → print reply. Outbound side effects are just `console.log` (this *is* our "log the channels" stage).
 - [ ] **T3.3 ScriptChannel (test harness).** Feed a JSON array of user messages, capture replies; used by evals later.
   *Done when:* a scripted 3-turn conversation persists 1 conversation, 1 session, 6 messages in DB.
