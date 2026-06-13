@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "db:ping": "docker compose exec -T db pg_isready -U wagent -d wagent_farm",
     "db:generate": "pnpm --filter @wagent/db db:generate",
-    "db:migrate": "pnpm --filter @wagent/db db:migrate"
+    "db:migrate": "pnpm --filter @wagent/db db:migrate",
+    "db:seed": "pnpm --filter @wagent/db db:seed"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
