@@ -82,7 +82,11 @@ importers:
 
   packages/agents: {}
 
-  packages/channels: {}
+  packages/channels:
+    dependencies:
+      '@wagent/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/core:
     dependencies:

@@ -13,5 +13,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -b"
+  },
+  "dependencies": {
+    "@wagent/core": "workspace:*"
   }
 }
