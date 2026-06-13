@@ -62,6 +62,43 @@ describe('sessions tenant isolation', () => {
     expect(stillOpen?.id).toBe(sessA.id);
   });
 
+  it('touchSession advances last_activity_at and never crosses tenants', async () => {
+    const convA = await t.repos.conversations.getOrCreateConversation(seed.tenantA.id, {
+      channel: 'console',
+      endUserId: 'phone:+905550000008',
+    });
+    const sessA = await t.repos.sessions.createSession(seed.tenantA.id, {
+      conversationId: convA.id,
+      agentId: seed.agentA.id,
+    });
+
+    expect(
+      await t.repos.sessions.touchSession(seed.tenantB.id, sessA.id),
+    ).toBeUndefined();
+
+    const touched = await t.repos.sessions.touchSession(seed.tenantA.id, sessA.id);
+    expect(touched?.id).toBe(sessA.id);
+    expect(touched!.lastActivityAt.getTime()).toBeGreaterThanOrEqual(
+      sessA.lastActivityAt.getTime(),
+    );
+  });
+
+  it('touchSession returns undefined for a closed session', async () => {
+    const convA = await t.repos.conversations.getOrCreateConversation(seed.tenantA.id, {
+      channel: 'console',
+      endUserId: 'phone:+905550000009',
+    });
+    const sessA = await t.repos.sessions.createSession(seed.tenantA.id, {
+      conversationId: convA.id,
+      agentId: seed.agentA.id,
+    });
+    await t.repos.sessions.closeSession(seed.tenantA.id, sessA.id, 'manual');
+
+    expect(
+      await t.repos.sessions.touchSession(seed.tenantA.id, sessA.id),
+    ).toBeUndefined();
+  });
+
   it('closeSession persists the reason and a second close returns undefined', async () => {
     const convA = await t.repos.conversations.getOrCreateConversation(seed.tenantA.id, {
       channel: 'console',
@@ -75,6 +112,7 @@ describe('sessions tenant isolation', () => {
     const closed = await t.repos.sessions.closeSession(seed.tenantA.id, sessA.id, 'handoff');
     expect(closed?.status).toBe('closed');
     expect(closed?.closedReason).toBe('handoff');
+    expect(closed?.closedAt).not.toBeNull();
 
     expect(
       await t.repos.sessions.closeSession(seed.tenantA.id, sessA.id, 'manual'),
